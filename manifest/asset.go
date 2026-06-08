@@ -9,6 +9,7 @@ import (
   "io"
   "log"
   "os"
+  "path/filepath"
 
   "vertesan/hailstorm/crypto"
   "vertesan/hailstorm/rich"
@@ -54,8 +55,8 @@ func DecryptAllAssets(catalog *Catalog, dstDir string, srcDir string) {
     //   rich.Info("(%d/%d) Asset file %q(%v) already exists, skip decrypting.", counter, amount, entry.StrLabelCrc, entry.RealName)
     //   continue
     // }
-    
-    rawFile, err := os.Open(srcDir + "/" + entry.RealName)
+
+    rawFile, err := openRawAsset(srcDir, entry)
     if err != nil {
       panic(err)
     }
@@ -105,6 +106,19 @@ func DecryptAllAssets(catalog *Catalog, dstDir string, srcDir string) {
     plainFile.Close()
   }
   rich.Info("All asset files processed.")
+}
+
+func openRawAsset(srcDir string, entry Entry) (*os.File, error) {
+  rawFile, err := os.Open(filepath.Join(srcDir, entry.RealName))
+  if err == nil || !os.IsNotExist(err) {
+    return rawFile, err
+  }
+
+  resType := RAW_STR
+  if entry.ResourceType <= 1 {
+    resType = CATALOG_STR
+  }
+  return os.Open(filepath.Join(srcDir, resType, entry.RealName[:2], entry.RealName))
 }
 
 func DecodeAsset(asset *Asset, dst io.Writer, src io.Reader) {
