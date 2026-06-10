@@ -90,6 +90,7 @@ func main() {
   fDbOnly := flag.Bool("dbonly", false, "Only download and decrypt DB files, put assets aside.")
   fForce := flag.Bool("force", false, "Ignore current cached version and update caches.")
   fKeepRaw := flag.Bool("keepraw", false, "Do not delete encrypted raw asset files after decrypting.")
+  fCatalogOnly := flag.Bool("catalog-only", false, "Only download and parse catalog without downloading asset files.")
   fRawOnly := flag.Bool("raw-only", false, "Only download encrypted raw asset files and catalog without decrypting.")
   fConvert := flag.Bool("convert", false, "Only generate cache/plain from existing cache/assets without downloading.")
   fMaster := flag.Bool("master", false, "Only generate masterdata from existing cache/plain without downloading.")
@@ -248,6 +249,11 @@ func main() {
 
   // marshal catalog to a json file
   utils.WriteToJsonFile(catalog.Entries, catalogJsonFile)
+
+  if *fCatalogOnly {
+    rich.Info("Catalog-only mode: catalog download completed.")
+    return
+  }
 
   oldEntries := []manifest.Entry{}
   if err := utils.ReadFromJsonFile(catalogJsonFilePrev, &oldEntries); err != nil {

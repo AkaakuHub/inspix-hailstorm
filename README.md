@@ -20,6 +20,7 @@ Once build is completed, run `./hailstorm -h` to get instructions. Here are some
 - (without options): Download and decrypt all new assets and database since the last run. Note this operation can take from minutes to hours.
 - `--analyze`: For developers to analyze the structure of the database.
 - `--dbonly`: Ignore asset files, only download and decrypt master database. This operation can take several seconds.
+- `--catalog-only`: Only download and parse the catalog without downloading asset files.
 - `--raw-only`: Only download encrypted raw asset files and catalog without decrypting. Use with `--keep-path` to mirror the official asset URL path layout.
 
 
