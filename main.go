@@ -74,7 +74,7 @@ func filterByRegex(catalog *manifest.Catalog, pattern string) {
     rich.Error("Invalid regex pattern: %v", err)
     return
   }
-  
+
   s := []manifest.Entry{}
   for _, entry := range catalog.Entries {
     if re.MatchString(entry.StrLabelCrc) {
@@ -90,6 +90,7 @@ func main() {
   fDbOnly := flag.Bool("dbonly", false, "Only download and decrypt DB files, put assets aside.")
   fForce := flag.Bool("force", false, "Ignore current cached version and update caches.")
   fKeepRaw := flag.Bool("keepraw", false, "Do not delete encrypted raw asset files after decrypting.")
+  fRawOnly := flag.Bool("raw-only", false, "Only download encrypted raw asset files and catalog without decrypting.")
   fConvert := flag.Bool("convert", false, "Only generate cache/plain from existing cache/assets without downloading.")
   fMaster := flag.Bool("master", false, "Only generate masterdata from existing cache/plain without downloading.")
   fKeepPath := flag.Bool("keep-path", false, "Imitate url download path on file system for assets.")
@@ -105,53 +106,53 @@ func main() {
 
   if *fConvert {
     rich.Info("Convert mode: generating cache/plain from existing cache/assets...")
-    
+
     // Read existing catalog if it exists
     if _, err := os.Stat(catalogJsonFile); os.IsNotExist(err) {
       rich.Panic("No existing catalog found. Run without -convert first to download assets.")
     }
-    
+
     entries := []manifest.Entry{}
     if err := utils.ReadFromJsonFile(catalogJsonFile, &entries); err != nil {
       panic(err)
     }
-    
+
     catalog := &manifest.Catalog{
       Entries: entries,
     }
-    
+
     // Only decrypt existing assets
     manifest.DecryptAllAssets(catalog, decrpytedAssetsSaveDir, assetsSaveDir)
-    
+
     rich.Info("Conversion completed.")
     return
   }
 
   if *fMaster {
     rich.Info("Master mode: generating masterdata from existing cache/plain...")
-    
+
     // Read existing catalog if it exists
     if _, err := os.Stat(catalogJsonFile); os.IsNotExist(err) {
       rich.Panic("No existing catalog found. Run without -master first to download assets.")
     }
-    
+
     entries := []manifest.Entry{}
     if err := utils.ReadFromJsonFile(catalogJsonFile, &entries); err != nil {
       panic(err)
     }
-    
+
     catalog := &manifest.Catalog{
       Entries: entries,
     }
-    
+
     // Filter to only DB files
     filterDb(catalog)
-    
+
     // Generate masterdata directory
     if err := os.MkdirAll(dbSaveDir, 0755); err != nil {
       panic(err)
     }
-    
+
     errCount := 0
     for _, entry := range catalog.Entries {
       if entry.StrTypeCrc != "tsv" {
@@ -176,7 +177,7 @@ func main() {
       }
       utils.WriteToYamlFile(rows, dbSaveDir+"/"+reflect.TypeOf(ins).Name()+".yaml")
     }
-    
+
     if errCount > 0 {
       rich.Error("%d Error(s) occurred during parsing, please check the log.", errCount)
     }
@@ -278,6 +279,11 @@ func main() {
 
   // download all assets
   network.DownloadAssetsAsync(catalog, assetsSaveDir, fKeepPath)
+
+  if *fRawOnly {
+    rich.Info("Raw-only mode: raw asset download completed.")
+    return
+  }
 
   // decrypt all assets
   manifest.DecryptAllAssets(catalog, decrpytedAssetsSaveDir, assetsSaveDir)
